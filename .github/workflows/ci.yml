@@ -10,14 +10,29 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+      # The workspace is `crates/*`; until the first crate is merged it has no
+      # members, and every cargo command fails on the empty glob.
+      - name: Any crates yet?
+        run: |
+          if ls crates/*/Cargo.toml >/dev/null 2>&1; then
+            echo "HAS_CRATES=true" >> "$GITHUB_ENV"
+          else
+            echo "No crates in crates/ yet, nothing to check."
+          fi
       - uses: dtolnay/rust-toolchain@stable
+        if: env.HAS_CRATES == 'true'
         with:
           components: clippy, rustfmt
           targets: wasm32-unknown-unknown
       - uses: Swatinem/rust-cache@v2
+        if: env.HAS_CRATES == 'true'
       - run: cargo fmt --all --check
+        if: env.HAS_CRATES == 'true'
       - run: cargo clippy --workspace --all-targets --all-features -- -D warnings
+        if: env.HAS_CRATES == 'true'
       - run: cargo test --workspace --all-features
+        if: env.HAS_CRATES == 'true'
       - run: cargo doc --workspace --no-deps --all-features
+        if: env.HAS_CRATES == 'true'
         env:
           RUSTDOCFLAGS: -D warnings
