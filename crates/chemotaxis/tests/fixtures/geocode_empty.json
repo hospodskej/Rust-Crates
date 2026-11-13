@@ -1,0 +1,11 @@
+{
+  "geocoding": {
+    "version": "0.2",
+    "attribution": "https://openrouteservice.org/terms-of-service/#attribution-geocode",
+    "query": {"text": "Neexistuje", "size": 1, "private": false, "boundary.country": ["CZE"], "querySize": 20, "parser": "pelias"},
+    "engine": {"name": "Pelias", "author": "Mapzen", "version": "1.0"},
+    "timestamp": 1794571200000
+  },
+  "type": "FeatureCollection",
+  "features": []
+}

@@ -1,0 +1,35 @@
+{
+  "type": "FeatureCollection",
+  "bbox": [16.04879, 48.80958, 16.12111, 48.85561],
+  "features": [
+    {
+      "bbox": [16.04879, 48.80958, 16.12111, 48.85561],
+      "type": "Feature",
+      "properties": {
+        "segments": [
+          {
+            "distance": 23412.6,
+            "duration": 1324.8,
+            "steps": [
+              {"distance": 512.3, "duration": 61.5, "type": 11, "instruction": "Head northwest", "name": "-", "way_points": [0, 9]},
+              {"distance": 22900.3, "duration": 1263.3, "type": 10, "instruction": "Arrive at your destination, on the left", "name": "-", "way_points": [9, 412]}
+            ]
+          }
+        ],
+        "way_points": [0, 412],
+        "summary": {"distance": 23412.6, "duration": 1324.8}
+      },
+      "geometry": {
+        "coordinates": [[16.12111, 48.80958], [16.11873, 48.81102], [16.04882, 48.85555]],
+        "type": "LineString"
+      }
+    }
+  ],
+  "metadata": {
+    "attribution": "openrouteservice.org | OpenStreetMap contributors",
+    "service": "routing",
+    "timestamp": 1794571200123,
+    "query": {"coordinates": [[16.12111, 48.80958], [16.04882, 48.85555]], "profile": "driving-car", "profileName": "driving-car", "format": "json"},
+    "engine": {"version": "9.0.0", "build_date": "2026-10-01T09:12:44Z", "graph_date": "2026-11-08T13:05:22Z", "osm_date": "2026-11-03T00:00:00Z"}
+  }
+}
