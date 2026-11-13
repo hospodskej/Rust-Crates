@@ -112,26 +112,28 @@ mod extract {
     impl<S: Send + Sync> FromRequestParts<S> for CspNonce {
         type Rejection = MissingCspNonce;
 
-        async fn from_request_parts(
+        fn from_request_parts(
             parts: &mut Parts,
             _state: &S,
-        ) -> Result<Self, Self::Rejection> {
-            parts
-                .extensions
-                .get::<CspNonce>()
-                .cloned()
-                .ok_or(MissingCspNonce)
+        ) -> impl Future<Output = Result<Self, Self::Rejection>> + Send {
+            std::future::ready(
+                parts
+                    .extensions
+                    .get::<CspNonce>()
+                    .cloned()
+                    .ok_or(MissingCspNonce),
+            )
         }
     }
 
     impl<S: Send + Sync> OptionalFromRequestParts<S> for CspNonce {
         type Rejection = Infallible;
 
-        async fn from_request_parts(
+        fn from_request_parts(
             parts: &mut Parts,
             _state: &S,
-        ) -> Result<Option<Self>, Self::Rejection> {
-            Ok(parts.extensions.get::<CspNonce>().cloned())
+        ) -> impl Future<Output = Result<Option<Self>, Self::Rejection>> + Send {
+            std::future::ready(Ok(parts.extensions.get::<CspNonce>().cloned()))
         }
     }
 }
