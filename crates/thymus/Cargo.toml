@@ -1,0 +1,28 @@
+[package]
+name = "thymus"
+version = "0.1.0"
+description = "Password authentication building blocks: Argon2id hashing, timing-safe sign-in, password reset tokens bound to the current password, and safe return-to paths"
+keywords = ["password", "argon2", "authentication", "reset-token", "security"]
+categories = ["authentication", "cryptography", "web-programming"]
+readme = "README.md"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+argon2 = "0.6"
+base64 = "0.22"
+hmac = "0.13"
+secrecy = "0.10"
+sha2 = "0.11"
+
+[dev-dependencies]
+base64 = "0.22"
+
+[package.metadata.docs.rs]
+all-features = true

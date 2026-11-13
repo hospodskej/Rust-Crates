@@ -5,7 +5,7 @@ They are named after parts of living things and electronics.
 
 | Crate | What it does |
 |---|---|
-| _(none yet)_ | |
+| [thymus](crates/thymus) | Password authentication: Argon2id hashing, timing-safe sign-in, reset tokens bound to the current password, safe `return_to` paths |
 
 ## Licence
 
