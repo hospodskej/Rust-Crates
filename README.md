@@ -5,7 +5,7 @@ They are named after parts of living things and electronics.
 
 | Crate | What it does |
 |---|---|
-| _(none yet)_ | |
+| [attenuator](crates/attenuator) | Shrinks photos in the browser before upload (Rust/WASM): at most 1600 px, re-encoded as WebP, swapped into the file input |
 
 ## Licence
 

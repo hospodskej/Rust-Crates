@@ -1,0 +1,55 @@
+[package]
+name = "attenuator"
+version = "0.1.0"
+description = "Shrinks photos in the browser before upload: at most 1600 px on the longer side, re-encoded as WebP, swapped into the file input (Rust/WASM, web-sys)"
+keywords = ["image", "resize", "webp", "wasm", "upload"]
+categories = ["wasm", "multimedia::images", "web-programming"]
+readme = "README.md"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+js-sys = "0.3.77"
+wasm-bindgen = "0.2.100"
+wasm-bindgen-futures = "0.4.50"
+
+[dependencies.web-sys]
+version = "0.3.77"
+features = [
+    "Blob",
+    "CanvasRenderingContext2d",
+    "DataTransfer",
+    "DataTransferItem",
+    "DataTransferItemList",
+    "Document",
+    "File",
+    "FileList",
+    "FilePropertyBag",
+    "HtmlCanvasElement",
+    "HtmlImageElement",
+    "HtmlInputElement",
+    "ImageBitmap",
+    "ImageBitmapOptions",
+    "ImageEncodeOptions",
+    "ImageOrientation",
+    "OffscreenCanvas",
+    "OffscreenCanvasRenderingContext2d",
+    "Url",
+    "Window",
+    "WorkerGlobalScope",
+]
+
+# The page that tests/browser/run.mjs drives in headless Chromium.
+[[example]]
+name = "browser_harness"
+crate-type = ["cdylib"]
+
+[package.metadata.docs.rs]
+all-features = true
+targets = ["wasm32-unknown-unknown"]
