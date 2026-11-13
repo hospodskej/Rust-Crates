@@ -101,7 +101,7 @@ mod tests {
             let segment = orientation_segment(Some(value));
             assert_eq!(orientation(&segment[4..]), Some(value));
         }
-        assert!(orientation_segment(None).is_empty());
+        assert_eq!(orientation_segment(None), [] as [u8; 0]);
     }
 
     #[test]
