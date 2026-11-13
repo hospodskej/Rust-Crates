@@ -3,7 +3,10 @@
 use std::future::{Future, ready};
 use std::time::Duration;
 
-use chemotaxis::{Address, Cache, Client, Error, Estimate, LatLon, MemoryCache, PLACE_LAYERS};
+use chemotaxis::{
+    Address, Cache, Client, Error, Estimate, LatLon, MemoryCache, PLACE_LAYERS, SuggestKind,
+    Suggestion,
+};
 use serde_json::json;
 use wiremock::matchers::{header, headers, method, path, query_param, query_param_is_missing};
 use wiremock::{Mock, MockServer, ResponseTemplate};
@@ -586,4 +589,299 @@ async fn the_steps_work_on_their_own() {
     );
     assert!((client.driving_meters(point).await.unwrap() - 23_412.6).abs() < 1e-9);
     assert!(client.cache().is_empty());
+}
+
+const NONE: [Suggestion; 0] = [];
+const AUTOCOMPLETE: &str = include_str!("fixtures/autocomplete_hlavni.json");
+
+fn autocomplete_of(properties: &[serde_json::Value]) -> ResponseTemplate {
+    let features: Vec<_> = properties
+        .iter()
+        .map(|properties| json!({"type": "Feature", "geometry": {"type": "Point", "coordinates": [16.6, 49.2]}, "properties": properties}))
+        .collect();
+    ResponseTemplate::new(200)
+        .set_body_json(json!({"type": "FeatureCollection", "features": features}))
+}
+
+#[tokio::test]
+async fn suggests_addresses_near_the_origin_with_street_town_and_postcode() {
+    let server = MockServer::start().await;
+    Mock::given(method("GET"))
+        .and(path("/geocode/autocomplete"))
+        .and(query_param("text", "Hlavní"))
+        .and(query_param("boundary.country", "CZ"))
+        .and(query_param("layers", "address,street"))
+        .and(query_param("focus.point.lon", "16.12111"))
+        .and(query_param("focus.point.lat", "48.80958"))
+        .and(query_param_is_missing("api_key"))
+        .and(header("authorization", KEY))
+        .respond_with(json_body(200, AUTOCOMPLETE))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let found = client(&server)
+        .suggest(" Hlavní ", "CZ", SuggestKind::Address)
+        .await
+        .unwrap();
+
+    // The second "Hlavní, Brno" is a duplicate label and the last feature
+    // names no town; both are left out.
+    assert_eq!(
+        found,
+        [
+            Suggestion {
+                label: "Hlavní 12, Znojmo, Czechia".into(),
+                street: Some("Hlavní 12".into()),
+                city: "Znojmo".into(),
+                zip: Some("669 02".into()),
+                country: "cz".into(),
+            },
+            Suggestion {
+                label: "Hlavní, Brno, Czechia".into(),
+                street: Some("Hlavní".into()),
+                city: "Brno".into(),
+                zip: None,
+                country: "cz".into(),
+            },
+            Suggestion {
+                label: "Hlavní, Pohořelice, Czechia".into(),
+                street: Some("Hlavní".into()),
+                city: "Pohořelice".into(),
+                zip: None,
+                country: "cz".into(),
+            },
+        ]
+    );
+    assert_eq!(
+        serde_json::to_value(&found[1]).unwrap(),
+        json!({"label": "Hlavní, Brno, Czechia", "street": "Hlavní", "city": "Brno", "zip": null, "country": "cz"})
+    );
+}
+
+#[tokio::test]
+async fn town_suggestions_look_for_places_only_and_are_cached_for_a_day() {
+    struct Recorder(MemoryCache, std::sync::Mutex<Vec<Duration>>);
+    impl Cache for Recorder {
+        fn get(&self, key: &str) -> impl Future<Output = Option<String>> + Send {
+            self.0.get(key)
+        }
+        fn put(&self, key: &str, value: String, ttl: Duration) -> impl Future<Output = ()> + Send {
+            self.1.lock().unwrap().push(ttl);
+            self.0.put(key, value, ttl)
+        }
+    }
+
+    let server = MockServer::start().await;
+    Mock::given(method("GET"))
+        .and(path("/geocode/autocomplete"))
+        .and(query_param("layers", PLACE_LAYERS))
+        .respond_with(autocomplete_of(&[
+            json!({"label": "Brno, Czechia", "locality": "Brno"}),
+        ]))
+        .expect(1)
+        .mount(&server)
+        .await;
+    let client = Client::builder(KEY, SAWMILL)
+        .base_url(server.uri())
+        .cache(Recorder(MemoryCache::new(), std::sync::Mutex::default()))
+        .build()
+        .unwrap();
+
+    for text in ["Brn", " brn  "] {
+        let found = client
+            .suggest(text, "cz", SuggestKind::Place)
+            .await
+            .unwrap();
+        assert_eq!(found.len(), 1);
+        assert_eq!(found[0].city, "Brno");
+        assert_eq!(found[0].street, None);
+    }
+    assert_eq!(
+        *client.cache().1.lock().unwrap(),
+        [Duration::from_secs(24 * 60 * 60)]
+    );
+}
+
+#[tokio::test]
+async fn address_and_town_suggestions_are_cached_apart() {
+    let server = MockServer::start().await;
+    mount_geocode(
+        &server,
+        "/geocode/autocomplete",
+        autocomplete_of(&[json!({"label": "Brno", "locality": "Brno"})]),
+        2,
+    )
+    .await;
+    let client = client(&server);
+
+    client
+        .suggest("Brno", "cz", SuggestKind::Place)
+        .await
+        .unwrap();
+    client
+        .suggest("Brno", "cz", SuggestKind::Address)
+        .await
+        .unwrap();
+    client
+        .suggest("Brno", "cz", SuggestKind::Address)
+        .await
+        .unwrap();
+    assert_eq!(client.cache().len(), 2);
+}
+
+#[tokio::test]
+async fn takes_the_first_eight_features() {
+    let server = MockServer::start().await;
+    let features: Vec<_> = (1..=10)
+        .map(|n| json!({"label": format!("Ulice {n}, Brno"), "locality": "Brno"}))
+        .collect();
+    mount_geocode(
+        &server,
+        "/geocode/autocomplete",
+        autocomplete_of(&features),
+        1,
+    )
+    .await;
+
+    let found = client(&server)
+        .suggest("Ulice", "cz", SuggestKind::Address)
+        .await
+        .unwrap();
+    let labels: Vec<_> = found.iter().map(|found| found.label.as_str()).collect();
+    assert_eq!(
+        labels,
+        (1..=8)
+            .map(|n| format!("Ulice {n}, Brno"))
+            .collect::<Vec<_>>()
+    );
+}
+
+#[tokio::test]
+async fn the_city_falls_back_to_localadmin_then_name_and_the_label_to_the_city() {
+    let server = MockServer::start().await;
+    let features = [
+        json!({"localadmin": "Hrušovany", "name": "Nádražní", "street": "Nádražní", "housenumber": " "}),
+        json!({"locality": "", "name": "Hatě", "label": " ", "postalcode": "669 02"}),
+        json!({"label": "Somewhere"}),
+    ];
+    mount_geocode(
+        &server,
+        "/geocode/autocomplete",
+        autocomplete_of(&features),
+        1,
+    )
+    .await;
+
+    let found = client(&server)
+        .suggest("Nád", "at", SuggestKind::Address)
+        .await
+        .unwrap();
+    assert_eq!(
+        found,
+        [
+            Suggestion {
+                label: "Hrušovany".into(),
+                street: Some("Nádražní".into()),
+                city: "Hrušovany".into(),
+                zip: None,
+                country: "at".into(),
+            },
+            Suggestion {
+                label: "Hatě".into(),
+                street: None,
+                city: "Hatě".into(),
+                zip: Some("669 02".into()),
+                country: "at".into()
+            },
+        ]
+    );
+}
+
+#[tokio::test]
+async fn no_suggestions_and_no_request_for_short_text_no_key_or_another_country() {
+    let server = MockServer::start().await;
+    let client = client(&server);
+
+    assert_eq!(
+        client
+            .suggest("Br", "cz", SuggestKind::Place)
+            .await
+            .unwrap(),
+        NONE
+    );
+    assert_eq!(
+        client
+            .suggest("  Br   ", "cz", SuggestKind::Place)
+            .await
+            .unwrap(),
+        NONE
+    );
+    assert_eq!(
+        client
+            .suggest(&"x".repeat(81), "cz", SuggestKind::Place)
+            .await
+            .unwrap(),
+        NONE
+    );
+    assert_eq!(
+        client
+            .suggest("Bratislava", "sk", SuggestKind::Place)
+            .await
+            .unwrap(),
+        NONE
+    );
+    assert_eq!(
+        client
+            .suggest("Brno", "Czechia", SuggestKind::Place)
+            .await
+            .unwrap(),
+        NONE
+    );
+    let keyless = Client::builder("", SAWMILL)
+        .base_url(server.uri())
+        .build()
+        .unwrap();
+    assert_eq!(
+        keyless
+            .suggest("Brno", "cz", SuggestKind::Place)
+            .await
+            .unwrap(),
+        NONE
+    );
+
+    assert!(server.received_requests().await.unwrap().is_empty());
+}
+
+#[tokio::test]
+async fn an_empty_answer_is_cached_but_a_failure_is_not() {
+    let server = MockServer::start().await;
+    let client = client(&server);
+    Mock::given(path("/geocode/autocomplete"))
+        .respond_with(ResponseTemplate::new(503))
+        .up_to_n_times(1)
+        .mount(&server)
+        .await;
+
+    let error = client
+        .suggest("Brno", "cz", SuggestKind::Place)
+        .await
+        .unwrap_err();
+    assert!(
+        matches!(error, Error::Http { status: 503, .. }),
+        "{error:?}"
+    );
+    assert!(client.cache().is_empty());
+
+    mount_geocode(&server, "/geocode/autocomplete", json_body(200, EMPTY), 1).await;
+    for _ in 0..2 {
+        assert_eq!(
+            client
+                .suggest("Brno", "cz", SuggestKind::Place)
+                .await
+                .unwrap(),
+            NONE
+        );
+    }
+    assert_eq!(client.cache().len(), 1);
 }

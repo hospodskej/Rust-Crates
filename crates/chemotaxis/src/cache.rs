@@ -10,8 +10,9 @@ use std::time::{Duration, Instant};
 /// The client keeps every distance it finds for 30 days (see
 /// [`ClientBuilder::cache_ttl`](crate::ClientBuilder::cache_ttl)), one entry
 /// per address or place, so a customer who opens the checkout three times
-/// costs one geocode and one route. "Not found" and failures are not kept:
-/// the next lookup asks again.
+/// costs one geocode and one route. Suggestions are kept for 1 day (see
+/// [`ClientBuilder::suggest_ttl`](crate::ClientBuilder::suggest_ttl)).
+/// "Not found" and failures are not kept: the next lookup asks again.
 ///
 /// Keys are short UTF-8 strings that already hold everything that makes an
 /// answer differ (origin, country, the normalized address or place). Values

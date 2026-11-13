@@ -29,8 +29,9 @@ async fn run(api_key: String) -> Result<(), chemotaxis::Error> {
 
 - **Address** (`one_way_km`): structured geocoding of street, town, postcode and country, then the driving distance from the origin in whole kilometres.
 - **Place** (`estimate`): a town name or postcode (PSČ), searched only among towns, parts of towns and postcodes in the given country, so "Znojmo" doesn't find a street of that name. Returns the place as found, its postcode and the kilometres.
+- **Suggestions** (`suggest`): while the customer types a street or a town, up to 8 suggestions nearest the origin first, with street, town and postcode. They serialize to the JSON a browser autocomplete reads (`label`, `street`, `city`, `zip`, `country`). Too short a text, no key or a country not served give an empty list without a request.
 - **Kilometres** are the route's metres / 1000, rounded half away from zero (49.5 km is 50).
-- **Caching:** found distances are kept for 30 days per address or place, ignoring spaces and case. "Not found" and failures are not kept. Bring your own store by implementing the small async `Cache` trait (e.g. on SQLite), or use `MemoryCache` or `NoCache` (the default).
+- **Caching:** found distances are kept for 30 days per address or place, suggestions for 1 day, ignoring spaces and case. "Not found" and failures are not kept. Bring your own store by implementing the small async `Cache` trait (e.g. on SQLite), or use `MemoryCache` or `NoCache` (the default).
 - **Errors** are an `Error` enum: `MissingApiKey`, `InvalidInput`, `NotFound`, `NoRoute`, `Http` (with the service's message), `Timeout`, `Request`. `is_not_found()` separates "no route there" from "the service failed"; a shop typically shows "delivery price calculated individually" for both.
 - **Timeouts:** 4 seconds to connect and 4 seconds per read, configurable.
 - **Base URL** is configurable, for tests against a mock server or a self-hosted openrouteservice.
@@ -41,7 +42,7 @@ async fn run(api_key: String) -> Result<(), chemotaxis::Error> {
 
 The key comes from you; the crate reads no environment variables. It is sent in the `Authorization` header, never in a URL, and `Debug` on the client prints `[redacted]` in its place. Keep it out of your logs too. Errors carry no URLs, so logging them doesn't log the customer's address.
 
-The free plan allows 1,000 geocoding and 2,000 route requests a day. An uncached lookup costs one of each; the crate doesn't count them.
+The free plan allows 1,000 geocoding and 2,000 route requests a day. An uncached lookup costs one of each and an uncached suggestion one geocoding request; the crate doesn't count them.
 
 ## Licence
 

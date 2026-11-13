@@ -10,6 +10,8 @@
 //! - [`Client::estimate`]: a town name or postcode (places only, in the
 //!   chosen country) to the place as found, its postcode and one-way
 //!   kilometres, for an estimate before checkout.
+//! - [`Client::suggest`]: suggestions while typing an address or a town,
+//!   nearest to the origin first, as JSON a browser autocomplete reads.
 //! - [`Client::geocode`], [`Client::geocode_place`] and
 //!   [`Client::driving_meters`] for the steps on their own, uncached.
 //!
@@ -51,7 +53,8 @@
 //! too. Errors carry no URLs, so they don't log the customer's address.
 //!
 //! The free plan allows 1,000 geocoding and 2,000 route requests a day. A
-//! lookup that isn't cached costs one of each; the crate doesn't count them.
+//! lookup that isn't cached costs one of each, and an uncached suggestion
+//! one geocoding request; the crate doesn't count them.
 //! Over the quota, openrouteservice answers 429 ([`Error::Http`]).
 //!
 //! # Timeouts
@@ -70,8 +73,9 @@ mod ors;
 
 pub use cache::{Cache, MemoryCache, NoCache};
 pub use client::{
-    Address, Client, ClientBuilder, DEFAULT_BASE_URL, DEFAULT_CACHE_TTL, DEFAULT_TIMEOUT, Estimate,
-    MAX_QUERY_CHARS, PLACE_LAYERS, Place,
+    ADDRESS_LAYERS, Address, Client, ClientBuilder, DEFAULT_BASE_URL, DEFAULT_CACHE_TTL,
+    DEFAULT_SUGGEST_TTL, DEFAULT_TIMEOUT, Estimate, MAX_QUERY_CHARS, MAX_SUGGESTIONS,
+    MIN_SUGGEST_CHARS, PLACE_LAYERS, Place, SuggestKind, Suggestion,
 };
 pub use coords::LatLon;
 pub use error::Error;

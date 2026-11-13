@@ -20,7 +20,15 @@ pub const DEFAULT_CACHE_TTL: Duration = Duration::from_secs(30 * 24 * 60 * 60);
 /// The geocoding layers a place lookup searches: towns, parts of towns and
 /// postcodes, so "Znojmo" doesn't find a street or a shop of that name.
 pub const PLACE_LAYERS: &str = "locality,localadmin,borough,neighbourhood,postalcode";
-/// The longest place query, in characters.
+/// How long suggestions are cached by default.
+pub const DEFAULT_SUGGEST_TTL: Duration = Duration::from_secs(24 * 60 * 60);
+/// The geocoding layers an address suggestion searches.
+pub const ADDRESS_LAYERS: &str = "address,street";
+/// The most suggestions one call returns.
+pub const MAX_SUGGESTIONS: usize = 8;
+/// The shortest text that gets suggestions, in characters.
+pub const MIN_SUGGEST_CHARS: usize = 3;
+/// The longest place query or suggestion text, in characters.
 pub const MAX_QUERY_CHARS: usize = 80;
 
 /// A delivery address, as the customer typed it.
@@ -63,6 +71,70 @@ pub struct Estimate {
     pub zip: Option<String>,
 }
 
+/// What [`Client::suggest`] looks for.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum SuggestKind {
+    /// Streets and addresses, for the checkout form.
+    Address,
+    /// Towns, parts of towns and postcodes ([`PLACE_LAYERS`]), for an
+    /// estimate before checkout.
+    Place,
+}
+
+impl SuggestKind {
+    fn layers(self) -> &'static str {
+        match self {
+            Self::Address => ADDRESS_LAYERS,
+            Self::Place => PLACE_LAYERS,
+        }
+    }
+
+    fn cache_name(self) -> &'static str {
+        match self {
+            Self::Address => "suggest-address",
+            Self::Place => "suggest-place",
+        }
+    }
+}
+
+/// One suggestion while typing an address or a town.
+///
+/// Serializes to the JSON a browser autocomplete reads, with `null` for a
+/// missing street or postcode:
+///
+/// ```
+/// use chemotaxis::Suggestion;
+///
+/// let suggestion = Suggestion {
+///     label: "Hlavní 12, Znojmo, Czechia".into(),
+///     street: Some("Hlavní 12".into()),
+///     city: "Znojmo".into(),
+///     zip: None,
+///     country: "cz".into(),
+/// };
+/// assert_eq!(
+///     serde_json::to_string(&suggestion).unwrap(),
+///     r#"{"label":"Hlavní 12, Znojmo, Czechia","street":"Hlavní 12","city":"Znojmo","zip":null,"country":"cz"}"#
+/// );
+/// ```
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Suggestion {
+    /// The whole suggestion as openrouteservice words it, e.g. `"Hlavní 12,
+    /// Znojmo, Czechia"`; the town when it has no label. Unique within one
+    /// answer.
+    pub label: String,
+    /// Street and house number, e.g. `"Hlavní 12"`, when the suggestion has
+    /// a street.
+    pub street: Option<String>,
+    /// The town: the locality, else the local administrative area, else
+    /// the suggestion's name.
+    pub city: String,
+    /// The postcode, when it has one.
+    pub zip: Option<String>,
+    /// The country code the suggestion was asked for, lower case.
+    pub country: String,
+}
+
 /// Configures a [`Client`]. Made by [`Client::builder`].
 #[must_use]
 pub struct ClientBuilder<C = NoCache> {
@@ -73,6 +145,7 @@ pub struct ClientBuilder<C = NoCache> {
     read_timeout: Duration,
     cache: C,
     cache_ttl: Duration,
+    suggest_ttl: Duration,
     countries: Vec<String>,
 }
 
@@ -108,6 +181,7 @@ impl<C> ClientBuilder<C> {
             read_timeout: self.read_timeout,
             cache,
             cache_ttl: self.cache_ttl,
+            suggest_ttl: self.suggest_ttl,
             countries: self.countries,
         }
     }
@@ -115,6 +189,12 @@ impl<C> ClientBuilder<C> {
     /// How long found distances are kept. 30 days by default.
     pub fn cache_ttl(mut self, ttl: Duration) -> Self {
         self.cache_ttl = ttl;
+        self
+    }
+
+    /// How long [suggestions](Client::suggest) are kept. 1 day by default.
+    pub fn suggest_ttl(mut self, ttl: Duration) -> Self {
+        self.suggest_ttl = ttl;
         self
     }
 
@@ -162,6 +242,7 @@ impl<C> ClientBuilder<C> {
             base_url: self.base_url,
             cache: self.cache,
             cache_ttl: self.cache_ttl,
+            suggest_ttl: self.suggest_ttl,
             countries: self.countries,
         })
     }
@@ -176,6 +257,7 @@ impl<C> fmt::Debug for ClientBuilder<C> {
             .field("connect_timeout", &self.connect_timeout)
             .field("read_timeout", &self.read_timeout)
             .field("cache_ttl", &self.cache_ttl)
+            .field("suggest_ttl", &self.suggest_ttl)
             .field("countries", &self.countries)
             .finish_non_exhaustive()
     }
@@ -215,6 +297,7 @@ pub struct Client<C = NoCache> {
     base_url: String,
     cache: C,
     cache_ttl: Duration,
+    suggest_ttl: Duration,
     countries: Vec<String>,
 }
 
@@ -248,6 +331,7 @@ impl Client {
             read_timeout: DEFAULT_TIMEOUT,
             cache: NoCache,
             cache_ttl: DEFAULT_CACHE_TTL,
+            suggest_ttl: DEFAULT_SUGGEST_TTL,
             countries: Vec::new(),
         }
     }
@@ -330,6 +414,80 @@ impl<C: Cache> Client<C> {
         };
         self.store(&key, &estimate).await;
         Ok(estimate)
+    }
+
+    /// Suggestions while the customer types an address or a town, nearest
+    /// to the origin first: up to [`MAX_SUGGESTIONS`], with no two of the
+    /// same label. Cached for 1 day per kind, country and text (whatever
+    /// the spaces and case); see [`ClientBuilder::suggest_ttl`].
+    ///
+    /// Typing should go on working without the service, so a missing API
+    /// key, a text (squished) under [`MIN_SUGGEST_CHARS`] or over
+    /// [`MAX_QUERY_CHARS`] characters, or a country that isn't a two-letter
+    /// code the client allows give an empty list without a request.
+    ///
+    /// Costs one geocoding request when not cached. Called on every few
+    /// keystrokes, it is the quickest way through the daily quota: debounce
+    /// in the browser and rate-limit on the server.
+    ///
+    /// ```no_run
+    /// use chemotaxis::{Client, LatLon, SuggestKind};
+    ///
+    /// # async fn run(client: Client) -> Result<(), chemotaxis::Error> {
+    /// for suggestion in client.suggest("Hlavní", "cz", SuggestKind::Address).await? {
+    ///     println!("{}", suggestion.label);
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Only the request failures ([`Error::Http`], [`Error::Timeout`],
+    /// [`Error::Request`]), which are not cached. An answer with nothing in
+    /// it is an empty list, and is cached.
+    pub async fn suggest(
+        &self,
+        text: &str,
+        country: &str,
+        kind: SuggestKind,
+    ) -> Result<Vec<Suggestion>, Error> {
+        let text = squish(text);
+        let length = text.chars().count();
+        let Ok(country) = self.country(country) else {
+            return Ok(Vec::new());
+        };
+        if self.api_key.is_empty() || !(MIN_SUGGEST_CHARS..=MAX_QUERY_CHARS).contains(&length) {
+            return Ok(Vec::new());
+        }
+        let key = self.cache_key(kind.cache_name(), &[&country, &text]);
+        if let Some(suggestions) = self.cached(&key).await {
+            return Ok(suggestions);
+        }
+        let params = [
+            ("text", text),
+            ("boundary.country", country.to_ascii_uppercase()),
+            ("layers", kind.layers().to_owned()),
+            ("focus.point.lon", self.origin.lon.to_string()),
+            ("focus.point.lat", self.origin.lat.to_string()),
+        ];
+        let answer: ors::FeatureCollection<ors::Place> =
+            self.get("/geocode/autocomplete", &params).await?;
+        let mut suggestions: Vec<Suggestion> = Vec::new();
+        for feature in answer.features.into_iter().take(MAX_SUGGESTIONS) {
+            let Some(suggestion) = suggestion(feature.properties.unwrap_or_default(), &country)
+            else {
+                continue;
+            };
+            if suggestions
+                .iter()
+                .all(|found| found.label != suggestion.label)
+            {
+                suggestions.push(suggestion);
+            }
+        }
+        self.store_for(&key, &suggestions, self.suggest_ttl).await;
+        Ok(suggestions)
     }
 
     /// Geocodes a full address (structured search, best match only). Not
@@ -484,8 +642,12 @@ impl<C: Cache> Client<C> {
     }
 
     async fn store<T: Serialize>(&self, key: &str, value: &T) {
+        self.store_for(key, value, self.cache_ttl).await;
+    }
+
+    async fn store_for<T: Serialize>(&self, key: &str, value: &T, ttl: Duration) {
         if let Ok(json) = serde_json::to_string(value) {
-            self.cache.put(key, json, self.cache_ttl).await;
+            self.cache.put(key, json, ttl).await;
         }
     }
 }
@@ -497,6 +659,7 @@ impl<C> fmt::Debug for Client<C> {
             .field("origin", &self.origin)
             .field("base_url", &self.base_url)
             .field("cache_ttl", &self.cache_ttl)
+            .field("suggest_ttl", &self.suggest_ttl)
             .field("countries", &self.countries)
             .finish_non_exhaustive()
     }
@@ -518,6 +681,26 @@ fn request_error(error: reqwest::Error) -> Error {
     } else {
         Error::Request(error.without_url())
     }
+}
+
+/// A suggestion from an autocomplete feature's properties, unless it names
+/// no town.
+fn suggestion(properties: ors::Place, country: &str) -> Option<Suggestion> {
+    let city = present(properties.locality)
+        .or_else(|| present(properties.localadmin))
+        .or_else(|| present(properties.name))?;
+    let street = [present(properties.street), present(properties.housenumber)]
+        .into_iter()
+        .flatten()
+        .collect::<Vec<_>>()
+        .join(" ");
+    Some(Suggestion {
+        label: present(properties.label).unwrap_or_else(|| city.clone()),
+        street: Some(street).filter(|street| !street.is_empty()),
+        city,
+        zip: present(properties.postalcode),
+        country: country.to_owned(),
+    })
 }
 
 fn check_query(query: &str) -> Result<(), Error> {

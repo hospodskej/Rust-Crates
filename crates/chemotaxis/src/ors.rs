@@ -37,9 +37,17 @@ impl Geometry {
     }
 }
 
-/// Properties of a geocoding result (Pelias).
+/// Properties of a geocoding or autocomplete result (Pelias).
 #[derive(Debug, Default, Deserialize)]
 pub(crate) struct Place {
+    #[serde(default)]
+    pub label: Option<String>,
+    #[serde(default)]
+    pub street: Option<String>,
+    #[serde(default)]
+    pub housenumber: Option<String>,
+    #[serde(default)]
+    pub localadmin: Option<String>,
     #[serde(default)]
     pub locality: Option<String>,
     #[serde(default)]
