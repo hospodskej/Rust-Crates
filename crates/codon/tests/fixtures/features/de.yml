@@ -1,0 +1,49 @@
+# The same keys in German; `de` is served under /at.
+de:
+  site_name: "Sägewerk Derflice"
+  nav:
+    domu: "Startseite"
+    kontakt: Kontakt
+  keywords:
+    type: "Typ"
+    crate: "Kiste"
+    "404": "Nicht gefunden"
+    match: "Treffer"
+    first-step: "Erster Schritt"
+  scalars:
+    year: 2024
+    price: 12.5
+    enabled: false
+  greeting: "Guten Tag, %{name}!"
+  vat: "MwSt. %{rate} %"
+  escapes: "%{amount} %% und {geschweifte} Klammern"
+  not_interpolated: "100 %% {sicher}"
+  product_kind: "Art: %{type}"
+  order:
+    summary: "Bestellung %{number} vom %{date}"
+    items:
+      zero: "Kein Artikel"
+      one: "%{count} Artikel"
+      other: "%{count} Artikel"
+    pieces_one: "Stück"
+    pieces_other: "Stück"
+    in_cart:
+      one: "%{count} Artikel im Warenkorb %{cart}"
+      other: "%{count} Artikel im Warenkorb %{cart}"
+    payment_other: "Andere Zahlung"
+  steps:
+    - "Produkt wählen"
+    - "In den Warenkorb"
+    - "Bestellen"
+  highlights_html:
+    - "<b>Schnell</b>"
+    - "<i>Günstig</i>"
+  intro_html: "<strong>Qualitäts</strong>holz"
+  privacy_html: "Ich stimme der %{link} und der Datenverarbeitung für %{name} zu."
+  basket_html:
+    one: "<b>%{count}</b> Artikel"
+    other: "<b>%{count}</b> Artikel"
+  terms_html: |
+    <h2>AGB</h2>
+    <p>Verkäufer: %{seller}</p>
+  locale_name: "Sprache: %{locale}"

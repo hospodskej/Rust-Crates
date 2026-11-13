@@ -5,7 +5,7 @@ They are named after parts of living things and electronics.
 
 | Crate | What it does |
 |---|---|
-| _(none yet)_ | |
+| [codon](crates/codon) | Compile-time checked translations: Rails-style YAML locale files become typed Rust functions, plus locale prefixes in URLs |
 
 ## Licence
 
