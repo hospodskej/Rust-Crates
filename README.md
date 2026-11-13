@@ -5,7 +5,7 @@ They are named after parts of living things and electronics.
 
 | Crate | What it does |
 |---|---|
-| _(none yet)_ | |
+| [chemotaxis](crates/chemotaxis) | Async openrouteservice client: geocodes an address or a town and gives the driving distance from a fixed origin, with a pluggable 30-day cache |
 
 ## Licence
 

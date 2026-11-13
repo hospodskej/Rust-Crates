@@ -1,0 +1,52 @@
+{
+  "geocoding": {
+    "version": "0.2",
+    "attribution": "https://openrouteservice.org/terms-of-service/#attribution-geocode",
+    "query": {
+      "text": "Znojmo",
+      "size": 1,
+      "layers": ["locality", "localadmin", "borough", "neighbourhood", "postalcode"],
+      "private": false,
+      "boundary.country": ["CZE"],
+      "lang": {"name": "English", "iso6391": "en", "iso6393": "eng", "via": "default", "defaulted": true},
+      "querySize": 20,
+      "parser": "pelias",
+      "parsed_text": {"subject": "Znojmo", "locality": "Znojmo"}
+    },
+    "engine": {"name": "Pelias", "author": "Mapzen", "version": "1.0"},
+    "timestamp": 1794571200000
+  },
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [16.04882, 48.85555]},
+      "properties": {
+        "id": "101752095",
+        "gid": "whosonfirst:locality:101752095",
+        "layer": "locality",
+        "source": "whosonfirst",
+        "source_id": "101752095",
+        "name": "Znojmo",
+        "postalcode": "669 02",
+        "confidence": 1,
+        "match_type": "exact",
+        "accuracy": "centroid",
+        "country": "Czechia",
+        "country_gid": "whosonfirst:country:85633105",
+        "country_a": "CZE",
+        "region": "South Moravian",
+        "region_gid": "whosonfirst:region:85682799",
+        "region_a": "JM",
+        "county": "Znojmo",
+        "county_gid": "whosonfirst:county:102064371",
+        "locality": "Znojmo",
+        "locality_gid": "whosonfirst:locality:101752095",
+        "continent": "Europe",
+        "label": "Znojmo, Czechia"
+      },
+      "bbox": [16.0028, 48.8228, 16.1075, 48.8828]
+    }
+  ],
+  "bbox": [16.0028, 48.8228, 16.1075, 48.8828]
+}

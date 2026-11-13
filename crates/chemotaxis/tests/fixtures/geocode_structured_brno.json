@@ -1,0 +1,55 @@
+{
+  "geocoding": {
+    "version": "0.2",
+    "attribution": "https://openrouteservice.org/terms-of-service/#attribution-geocode",
+    "query": {
+      "address": "Hlavní 1",
+      "locality": "Brno",
+      "postalcode": "602 00",
+      "country": "CZ",
+      "size": 1,
+      "layers": ["venue", "street", "country", "macroregion", "region", "county", "localadmin", "locality", "borough", "neighbourhood", "continent", "empire", "dependency", "macrocounty", "macrohood", "microhood", "disputed", "postalcode", "ocean", "marinearea"],
+      "private": false,
+      "boundary.country": ["CZE"],
+      "lang": {"name": "Czech", "iso6391": "cs", "iso6393": "ces", "via": "header", "defaulted": false},
+      "querySize": 20,
+      "parser": "pelias",
+      "parsed_text": {"housenumber": "1", "street": "hlavní", "postalcode": "602 00", "city": "brno", "country": "cz"}
+    },
+    "warnings": ["performance optimization: excluding 'address' layer"],
+    "engine": {"name": "Pelias", "author": "Mapzen", "version": "1.0"},
+    "timestamp": 1794571200000
+  },
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [16.6, 49.2]},
+      "properties": {
+        "id": "polyline:21964385",
+        "gid": "openstreetmap:street:polyline:21964385",
+        "layer": "street",
+        "source": "openstreetmap",
+        "source_id": "polyline:21964385",
+        "name": "Hlavní",
+        "street": "Hlavní",
+        "postalcode": "602 00",
+        "confidence": 0.8,
+        "match_type": "fallback",
+        "accuracy": "centroid",
+        "country": "Czechia",
+        "country_gid": "whosonfirst:country:85633105",
+        "country_a": "CZE",
+        "region": "South Moravian",
+        "region_gid": "whosonfirst:region:85682799",
+        "region_a": "JM",
+        "county": "Brno-City",
+        "locality": "Brno",
+        "locality_gid": "whosonfirst:locality:101752073",
+        "continent": "Europe",
+        "label": "Hlavní, Brno, Czechia"
+      }
+    }
+  ],
+  "bbox": [16.5995, 49.1996, 16.6005, 49.2004]
+}

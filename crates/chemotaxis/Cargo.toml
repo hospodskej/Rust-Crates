@@ -1,0 +1,28 @@
+[package]
+name = "chemotaxis"
+version = "0.1.0"
+description = "Typed async client for openrouteservice: geocode an address or a town, then get the driving distance from a fixed origin, with a pluggable 30-day cache"
+keywords = ["openrouteservice", "geocoding", "routing", "distance", "delivery"]
+categories = ["api-bindings", "web-programming::http-client", "science::geo"]
+readme = "README.md"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+reqwest = { version = "0.13", default-features = false, features = ["rustls", "json", "query"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+
+[dev-dependencies]
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+wiremock = "0.6"
+
+[package.metadata.docs.rs]
+all-features = true
