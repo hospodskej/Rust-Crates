@@ -312,7 +312,7 @@ mod tests {
     fn flattens_in_yaml_order() {
         let (entries, problems) =
             parse("cs:\n  b: x\n  a:\n    z: 1\n    y: true\n  c: [p, 2.5]\n  n:\n");
-        assert!(problems.is_empty());
+        assert_eq!(problems, []);
         assert_eq!(keys(&entries), ["b", "a.z", "a.y", "c"]);
         assert_eq!(entries[1].value, Value::Text("1".into()));
         assert_eq!(entries[2].value, Value::Text("true".into()));
@@ -348,7 +348,7 @@ mod tests {
     #[test]
     fn single_suffix_is_a_plain_key() {
         let (entries, problems) = parse("cs:\n  payment_other: x\n  step_one: y\n");
-        assert!(problems.is_empty());
+        assert_eq!(problems, []);
         assert_eq!(keys(&entries), ["payment_other", "step_one"]);
     }
 
