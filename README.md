@@ -5,7 +5,7 @@ They are named after parts of living things and electronics.
 
 | Crate | What it does |
 |---|---|
-| _(none yet)_ | |
+| [spliceosome](crates/spliceosome) | Sanitises uploaded JPEG, PNG and WebP images: checks the format and size limits, strips metadata and anything appended, without decoding pixels |
 
 ## Licence
 
