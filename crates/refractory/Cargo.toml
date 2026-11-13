@@ -1,0 +1,42 @@
+[package]
+name = "refractory"
+version = "0.1.0"
+description = "Rate limiting for Rust web apps: a GCRA check API for handlers and an optional Tower/Axum layer that answers 429 with Retry-After"
+keywords = ["rate-limit", "throttle", "axum", "tower", "security"]
+categories = ["web-programming::http-server", "network-programming", "algorithms"]
+readme = "README.md"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+siphasher = "1"
+axum = { version = "0.8", default-features = false, features = ["tokio"], optional = true }
+http = { version = "1", optional = true }
+tower-layer = { version = "0.3", optional = true }
+tower-service = { version = "0.3", optional = true }
+
+[features]
+default = ["axum"]
+# The Tower layer (`RateLimitLayer`), the `ClientIp` key extractor and the
+# `RemoteIp` Axum extractor. Axum keeps `ConnectInfo` behind its `tokio`
+# feature, which every app that serves with `ConnectInfo` has on anyway.
+axum = ["dep:axum", "dep:http", "dep:tower-layer", "dep:tower-service"]
+
+[dev-dependencies]
+axum = "0.8"
+serde = { version = "1", features = ["derive"] }
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+tower = { version = "0.5", features = ["util"] }
+
+[[example]]
+name = "shop"
+required-features = ["axum"]
+
+[package.metadata.docs.rs]
+all-features = true
