@@ -5,6 +5,8 @@ description = "Compile-time checked translations: turns Rails-style YAML locale 
 keywords = ["i18n", "yaml", "translation", "codegen", "leptos"]
 categories = ["internationalization", "localization", "development-tools::build-utils", "no-std", "web-programming"]
 readme = "README.md"
+# The test fixtures (sample locale files and generated snapshots) stay in the repository.
+exclude = ["tests/"]
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
