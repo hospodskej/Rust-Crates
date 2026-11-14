@@ -5,7 +5,7 @@ They are named after parts of living things and electronics.
 
 | Crate | What it does |
 |---|---|
-| _(none yet)_ | |
+| [cuticle](crates/cuticle) | Tower layer for Axum that adds strict security headers, with a per-request Content-Security-Policy nonce for inline scripts and Leptos |
 
 ## Licence
 
