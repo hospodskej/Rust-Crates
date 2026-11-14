@@ -1,0 +1,21 @@
+[package]
+name = "spliceosome"
+version = "0.1.0"
+description = "Pure-Rust sanitiser for uploaded JPEG, PNG and WebP images: checks the format and size limits, strips metadata and trailing data, never decodes pixels"
+keywords = ["image", "sanitize", "exif", "metadata", "upload"]
+categories = ["multimedia::images", "web-programming", "no-std"]
+readme = "README.md"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[dependencies]
+thiserror = { version = "2", default-features = false }
+
+[dev-dependencies]
+proptest = "1"
+
+[lints]
+workspace = true
