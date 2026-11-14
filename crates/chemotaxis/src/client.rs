@@ -559,10 +559,19 @@ impl<C: Cache> Client<C> {
     }
 
     async fn find_place(&self, query: &str, country: &str) -> Result<Place, Error> {
+        // A postcode written "669 02" is searched as "66902".
+        let text = if query.chars().all(|c| c.is_ascii_digit() || c == ' ') {
+            query.replace(' ', "")
+        } else {
+            query.to_owned()
+        };
+        // Of places sharing a name, the one nearest the origin wins.
         let params = [
-            ("text", query.to_owned()),
+            ("text", text),
             ("boundary.country", country.to_ascii_uppercase()),
             ("layers", PLACE_LAYERS.to_owned()),
+            ("focus.point.lon", self.origin.lon.to_string()),
+            ("focus.point.lat", self.origin.lat.to_string()),
             ("size", "1".to_owned()),
         ];
         let answer: ors::FeatureCollection<ors::Place> =
