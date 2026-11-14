@@ -1,0 +1,53 @@
+# Every feature of codon, in Czech (the default locale).
+cs:
+  site_name: "Pila Derflice"
+  nav:
+    domu: "Domů"
+    kontakt: Kontakt
+  # Keys that are not valid Rust identifiers.
+  keywords:
+    type: "Typ"
+    crate: "Bedna"
+    "404": "Nenalezeno"
+    match: "Shoda"
+    first-step: "První krok"
+  scalars:
+    year: 2024
+    price: 12.5
+    enabled: true
+  greeting: "Dobrý den, %{name}!"
+  vat: "DPH %{rate} %"
+  escapes: "%{amount} %% a {složené} závorky"
+  not_interpolated: "100 %% {jistota}"
+  product_kind: "Druh: %{type}"
+  order:
+    summary: "Objednávka %{number} ze dne %{date}"
+    items:
+      zero: "Žádná položka"
+      one: "%{count} položka"
+      few: "%{count} položky"
+      other: "%{count} položek"
+    pieces_one: "kus"
+    pieces_few: "kusy"
+    pieces_other: "kusů"
+    in_cart:
+      one: "%{count} položka v košíku %{cart}"
+      other: "%{count} položek v košíku %{cart}"
+    payment_other: "Jiná platba"
+  steps:
+    - "Vyberte produkt"
+    - "Přidejte do košíku"
+    - "Objednejte"
+  highlights_html:
+    - "<b>Rychle</b>"
+    - "<i>Levně</i>"
+  intro_html: "<strong>Kvalitní</strong> dřevo"
+  privacy_html: "Souhlasím se %{link} a se zpracováním údajů pro %{name}."
+  basket_html:
+    one: "<b>%{count}</b> položka"
+    few: "<b>%{count}</b> položky"
+    other: "<b>%{count}</b> položek"
+  terms_html: |
+    <h2>Obchodní podmínky</h2>
+    <p>Prodávající: %{seller}</p>
+  locale_name: "Jazyk: %{locale}"

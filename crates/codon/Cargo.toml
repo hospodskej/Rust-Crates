@@ -1,0 +1,38 @@
+[package]
+name = "codon"
+version = "0.1.0"
+description = "Compile-time checked translations: turns Rails-style YAML locale files into typed Rust functions"
+keywords = ["i18n", "yaml", "translation", "codegen", "leptos"]
+categories = ["internationalization", "localization", "development-tools::build-utils", "no-std", "web-programming"]
+readme = "README.md"
+# The test fixtures (sample locale files and generated snapshots) stay in the repository.
+exclude = ["tests/"]
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[features]
+default = []
+## The code generator, for use from `build.rs` (`[build-dependencies]`).
+build = ["dep:yaml-rust2", "dep:proc-macro2", "dep:quote", "dep:syn", "dep:prettyplease"]
+## `Serialize`/`Deserialize` for the generated `Locale` enum.
+serde = ["dep:serde"]
+
+[dependencies]
+serde = { version = "1.0.200", optional = true, default-features = false }
+yaml-rust2 = { version = "0.13", optional = true, default-features = false }
+proc-macro2 = { version = "1.0.80", optional = true, default-features = false }
+quote = { version = "1.0.35", optional = true, default-features = false }
+syn = { version = "2.0.60", optional = true, default-features = false, features = ["full", "parsing", "printing"] }
+prettyplease = { version = "0.2.20", optional = true }
+
+[dev-dependencies]
+serde_json = "1"
+
+[package.metadata.docs.rs]
+all-features = true
+
+[lints]
+workspace = true
